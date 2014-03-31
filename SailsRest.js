@@ -13,51 +13,15 @@ module.exports = (function(){
 
   var collections = {};
 
+  var formatters = require('./lib/formatters')(collections);
+
   // Private functions
-  /**
-   * Format result object according to schema
-   * @param result result object
-   * @param collectionName name of collection the result object belongs to
-   * @returns {*}
-   */
-  function formatResult(result, collectionName, config){
-    if (_.isFunction(config.beforeFormatResult)) {
-      result = config.beforeFormatResult(result);
-    }
-
-    _.each(collections[collectionName].definition, function(def, key) {
-      if (def.type.match(/date/i)) {
-        result[key] = new Date(result[key] ? result[key] : null);
-      }
-    });
-
-    if (_.isFunction(config.afterFormatResult)) {
-      result = config.afterFormatResult(result);
-    }
-
-    return result;
+  function formatResult(result, collectionName, config, callback) {
+    formatters[config.type].formatResult(result, collectionName, config, callback);
   }
-
-  /**
-   * Format results according to schema
-   * @param results array of result objects (model instances)
-   * @param collectionName name of collection the result object belongs to
-   * @returns {*}
-   */
-  function formatResults(results, collectionName, config){
-    if (_.isFunction(config.beforeFormatResults)) {
-      results = config.beforeFormatResults(results);
-    }
-
-    results.forEach(function(result) {
-      formatResult(result, collectionName, config);
-    });
-
-    if (_.isFunction(config.afterFormatResults)) {
-      results = config.afterFormatResults(results);
-    }
-
-    return results;
+  
+  function formatResults(results, collectionName, config, callback) {
+    formatters[config.type].formatResults(results, collectionName, config, callback);
   }
 
   /**
@@ -66,11 +30,11 @@ module.exports = (function(){
    * @param collectionName name of collection the result object belongs to
    * @returns {*}
    */
-  function getResultsAsCollection(data, collectionName, config){
+  function getResultsAsCollection(data, collectionName, config, callback){
     var d = (data.objects || data.results || data),
         a = _.isArray(d) ? d : [d];
 
-    return formatResults(a, collectionName, config);
+    return formatResults(a, collectionName, config, callback);
   }
 
   /**
@@ -176,21 +140,23 @@ module.exports = (function(){
         }
         else {
           if (methodName === 'find') {
-            r = getResultsAsCollection(obj, collectionName, config);
+            getResultsAsCollection(obj, collectionName, config, function(err, r) {
+              if (cache) {
+                cache.engine.set(uri, r);
+              }
 
-            if (cache) {
-              cache.engine.set(uri, r);
-            }
+              cb(err || null, r);
+            });
           }
           else {
-            r = formatResult(obj, collectionName, config);
-
-            if (cache) {
-              cache.engine.del(uri);
-            }
+            formatResult(obj, collectionName, config, function(err, r) {
+              if (cache) {
+                cache.engine.del(uri);
+              }
+              
+              cb(err || null, r);
+            });
           }
-
-          cb(null, r);
         }
       };
 
@@ -247,11 +213,14 @@ module.exports = (function(){
 
       instance = {
         config: {
+          type: config.type,
           protocol: config.protocol,
           hostname: config.host,
           port: config.port,
           pathname: config.pathname,
           headers: config.headers,
+          collectionSelector: config.collectionSelector,
+          recordSelector: config.recordSelector,
           query: config.query,
           resource: config.resource || collection.identity,
           action: config.action,

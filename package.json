@@ -25,9 +25,11 @@
   "readmeFilename": "README.md",
   "dependencies": {
     "async": "0.1.22",
-    "restify": "2.6.0",
+    "restify": "git://github.com/AnyPresence/node-restify.git#xml-client",
     "lodash": "1.2.1",
-    "express": "3.x"
+    "express": "3.x",
+    "xpath": "0.0.6",
+    "xml2js": "0.4.1"
   },
   "devDependencies": {
     "mocha": "~1.10.0",
