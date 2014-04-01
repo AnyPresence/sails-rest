@@ -20,8 +20,8 @@ module.exports = (function(){
     formatters[config.type].formatResult(result, collectionName, config, callback);
   }
   
-  function formatResults(results, collectionName, config, callback) {
-    formatters[config.type].formatResults(results, collectionName, config, callback);
+  function formatResults(results, collectionName, config, id, callback) {
+    formatters[config.type].formatResults(results, collectionName, config, id, callback);
   }
 
   /**
@@ -30,11 +30,11 @@ module.exports = (function(){
    * @param collectionName name of collection the result object belongs to
    * @returns {*}
    */
-  function getResultsAsCollection(data, collectionName, config, callback){
+  function getResultsAsCollection(data, collectionName, config, id, callback){
     var d = (data.objects || data.results || data),
         a = _.isArray(d) ? d : [d];
 
-    return formatResults(a, collectionName, config, callback);
+    return formatResults(a, collectionName, config, id, callback);
   }
 
   /**
@@ -65,10 +65,13 @@ module.exports = (function(){
 
     var pathname = config.pathname + '/' + config.resource + (config.action ? '/' + config.action : '');
 
+    var id = null;
+
     if (options && options.where) {
       // Add id to pathname if provided
       if (options.where.id) {
-        pathname += '/'+ options.where.id;
+        id = options.where.id;
+        pathname += '/'+ id;
         delete options.where.id;
       }
       else if (methodName === 'destroy' || methodName == 'update') {
@@ -140,7 +143,7 @@ module.exports = (function(){
         }
         else {
           if (methodName === 'find') {
-            getResultsAsCollection(obj, collectionName, config, function(err, r) {
+            getResultsAsCollection(obj, collectionName, config, id, function(err, r) {
               if (cache) {
                 cache.engine.set(uri, r);
               }
@@ -162,6 +165,10 @@ module.exports = (function(){
 
       // Make request via restify
       if (opt) {
+        if (restMethod === 'put' || restMethod === 'post') {
+          opt = formatters[config.type].formatRequest(collections, collectionName, opt);
+        }
+        
         connection[restMethod](path, opt, callback);
       }
       else {
