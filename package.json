@@ -29,7 +29,8 @@
     "lodash": "1.2.1",
     "express": "3.x",
     "xpath": "0.0.6",
-    "xml2js": "0.4.1"
+    "xml2js": "0.4.1",
+    "inflection": "1.3.5"
   },
   "devDependencies": {
     "mocha": "~1.10.0",
