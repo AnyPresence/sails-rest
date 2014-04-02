@@ -24,17 +24,8 @@ module.exports = (function(){
     formatters[config.type].formatResults(results, collectionName, config, id, callback);
   }
 
-  /**
-   * Ensure results are contained in an array. Resolves variants in API responses such as `results` or `objects` instead of `[.....]`
-   * @param data response data to format as results array
-   * @param collectionName name of collection the result object belongs to
-   * @returns {*}
-   */
   function getResultsAsCollection(data, collectionName, config, id, callback){
-    var d = (data.objects || data.results || data),
-        a = _.isArray(d) ? d : [d];
-
-    return formatResults(a, collectionName, config, id, callback);
+    return formatters[config.type].getResultsAsCollection(data, collectionName, config, id, callback);
   }
 
   /**
