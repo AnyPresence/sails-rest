@@ -272,7 +272,8 @@ module.exports = (function(){
             protocol: config.protocol,
             hostname: config.host,
             port: config.port
-          })
+          }),
+          headers: config.headers
         }),
 
         definition: collection.definition
