@@ -27,6 +27,22 @@ module.exports = (function(){
   function getResultsAsCollection(data, collectionName, config, id, callback){
     return formatters[config.type].getResultsAsCollection(data, collectionName, config, id, callback);
   }
+  
+  function addQueryStringToPath(path, options) {
+    var queryString = "";
+    _.each(_.keys(options), function(key) {
+      if (queryString !== "") {
+        queryString += "&";
+      }
+      queryString += encodeURIComponent(key) + "=" + encodeURIComponent(options[key]);
+    }); 
+    
+    if (queryString !== "") {
+      path += "?" + queryString;
+    }
+    
+    return path;
+  }
 
   /**
    * Makes a REST request via restify
@@ -38,6 +54,11 @@ module.exports = (function(){
    * @returns {*}
    */
   function makeRequest(collectionName, methodName, cb, options, values) {
+    var util = require('util');
+    
+    var limit = (options === null ? null : options.limit);
+    var skip = (options === null ? null : options.skip);
+    
     var r = null,
         opt = null,
         cache = collections[collectionName].cache,
@@ -163,6 +184,21 @@ module.exports = (function(){
         connection[restMethod](path, opt, callback);
       }
       else {
+        var opt = null;
+        if ((typeof skip !== 'undefined' && skip !== null) || (typeof limit !== 'undefined' && limit !== null)) {
+          opt = {};
+          
+          if (typeof config.limitParamName !== 'undefined' && config.limitParamName !== null &&
+                typeof limit !== 'undefined' && limit !== null) {
+            opt[config.limitParamName] = limit;
+          }
+          if (typeof config.offsetParamName !== 'undefined' && config.offsetParamName !== null &&
+                typeof skip !== 'undefined' && skip !== null) {
+            opt[config.offsetParamName] = skip;
+          }
+        } 
+        
+        path = addQueryStringToPath(path, opt);
         connection[restMethod](path, callback);
       }
     }
@@ -219,6 +255,8 @@ module.exports = (function(){
           headers: config.headers,
           collectionSelector: config.collectionSelector,
           recordSelector: config.recordSelector,
+          limitParamName: config.limitParamName,
+          offsetParamName: config.offsetParamName,
           query: config.query,
           resource: config.resource || collection.identity,
           action: config.action,
