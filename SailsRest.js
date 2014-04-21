@@ -28,18 +28,23 @@ module.exports = (function(){
     return formatters[config.type].getResultsAsCollection(data, collectionName, config, id, callback);
   }
   
-  function addQueryStringToPath(path, options, queryWrapParameter) {
+  function addQueryStringToPath(path, options, queryWrapParameter, queryParamAsUriEncodedJsonHash) {
     var queryString = "";
-    _.each(_.keys(options), function(key) {
-      if (queryString !== "") {
-        queryString += "&";
-      }
-      var value = options[key];
-      if (typeof queryWrapParameter !== 'undefined' && queryWrapParameter !== null) {
-        key = queryWrapParameter + "[" + key + "]";
-      }
-      queryString += encodeURIComponent(key) + "=" + encodeURIComponent(value);
-    }); 
+    if (queryParamAsUriEncodedJsonHash) { 
+      var wrapParam = queryWrapParameter || 'query';
+      queryString = wrapParam + "=" + encodeURIComponent(JSON.stringify(options));
+    } else {
+      _.each(_.keys(options), function(key) {
+        if (queryString !== "") {
+          queryString += "&";
+        }
+        var value = options[key];
+        if (typeof queryWrapParameter !== 'undefined' && queryWrapParameter !== null) {
+          key = queryWrapParameter + "[" + key + "]";
+        }
+        queryString += encodeURIComponent(key) + "=" + encodeURIComponent(value);
+      }); 
+    }
     
     if (queryString !== "") {
       path += "?" + queryString;
@@ -202,7 +207,7 @@ module.exports = (function(){
           }
         } 
         
-        path = addQueryStringToPath(path, opt, config.queryWrapParameter);
+        path = addQueryStringToPath(path, opt, config.queryWrapParameter, config.queryParamAsUriEncodedJsonHash);
         connection[restMethod](path, callback);
       }
     }
@@ -228,6 +233,7 @@ module.exports = (function(){
       action: null,
       query: {},
       queryWrapParameter: null,
+      queryParamAsUriEncodedJsonHash: false,
       methods: {
         create: 'post',
         find: 'get',
@@ -264,6 +270,7 @@ module.exports = (function(){
           offsetParamName: config.offsetParamName,
           query: config.query,
           queryWrapParameter: config.queryWrapParameter,
+          queryParamAsUriEncodedJsonHash: config.queryParamAsUriEncodedJsonHash,
           resource: config.resource || collection.identity,
           action: config.action,
           methods: collection.defaults ? _.extend({}, collection.defaults.methods, config.methods) : config.methods,
