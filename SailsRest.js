@@ -28,13 +28,17 @@ module.exports = (function(){
     return formatters[config.type].getResultsAsCollection(data, collectionName, config, id, callback);
   }
   
-  function addQueryStringToPath(path, options) {
+  function addQueryStringToPath(path, options, queryWrapParameter) {
     var queryString = "";
     _.each(_.keys(options), function(key) {
       if (queryString !== "") {
         queryString += "&";
       }
-      queryString += encodeURIComponent(key) + "=" + encodeURIComponent(options[key]);
+      var value = options[key];
+      if (typeof queryWrapParameter !== 'undefined' && queryWrapParameter !== null) {
+        key = queryWrapParameter + "[" + key + "]";
+      }
+      queryString += encodeURIComponent(key) + "=" + encodeURIComponent(value);
     }); 
     
     if (queryString !== "") {
@@ -198,7 +202,7 @@ module.exports = (function(){
           }
         } 
         
-        path = addQueryStringToPath(path, opt);
+        path = addQueryStringToPath(path, opt, config.queryWrapParameter);
         connection[restMethod](path, callback);
       }
     }
@@ -223,6 +227,7 @@ module.exports = (function(){
       resource: null,
       action: null,
       query: {},
+      queryWrapParameter: null,
       methods: {
         create: 'post',
         find: 'get',
@@ -258,6 +263,7 @@ module.exports = (function(){
           limitParamName: config.limitParamName,
           offsetParamName: config.offsetParamName,
           query: config.query,
+          queryWrapParameter: config.queryWrapParameter,
           resource: config.resource || collection.identity,
           action: config.action,
           methods: collection.defaults ? _.extend({}, collection.defaults.methods, config.methods) : config.methods,
